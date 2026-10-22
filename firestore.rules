@@ -1,0 +1,189 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && request.auth.token.email == 'fikririan16@gmail.com';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        isBootstrappedAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isExaminer() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'examiner')
+      );
+    }
+
+    // Test connection endpoint for initial boot validation
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin() || isExaminer());
+      allow list: if isAdmin() || isExaminer();
+      allow create: if isSignedIn() && request.auth.uid == userId && (
+        // Prevent normal users from self-assigning admin or examiner
+        (request.resource.data.role == 'applicant') ||
+        (isBootstrappedAdmin() && request.resource.data.role == 'admin')
+      );
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Applicants collection
+    match /applicants/{applicantId} {
+      allow get: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        isExaminer()
+      );
+      allow list: if isSignedIn() && (
+        isAdmin() ||
+        isExaminer() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isSignedIn() && (
+        isAdmin() ||
+        (request.resource.data.userId == request.auth.uid && request.resource.data.status in ['registered', 'verified'])
+      );
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        isExaminer() ||
+        (resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Test Categories (Tahfidz, CBT Akademik, Bahasa Arab, Wawancara)
+    match /testCategories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Question Bank (CBT test items)
+    // Question Bank (CBT test items)
+    match /questionBanks/{questionId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Test Schedules
+    match /testSchedules/{scheduleId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Test Sessions
+    match /testSessions/{sessionId} {
+      allow get: if isSignedIn() && (
+        isAdmin() ||
+        isExaminer() ||
+        (exists(/databases/$(database)/documents/applicants/$(resource.data.applicantId)) &&
+         get(/databases/$(database)/documents/applicants/$(resource.data.applicantId)).data.userId == request.auth.uid)
+      );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Test Answers (CBT answers)
+    match /testAnswers/{answerId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Test Results
+    match /testResults/{resultId} {
+      allow get: if isSignedIn() && (
+        isAdmin() ||
+        isExaminer() ||
+        (exists(/databases/$(database)/documents/applicants/$(resource.data.applicantId)) &&
+         get(/databases/$(database)/documents/applicants/$(resource.data.applicantId)).data.userId == request.auth.uid)
+      );
+      allow list: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // Examiner Assessments (Tahfidz & Interview grading sheets)
+    match /examinerAssessments/{assessmentId} {
+      allow get: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.examinerId == request.auth.uid ||
+        (exists(/databases/$(database)/documents/applicants/$(resource.data.applicantId)) &&
+         get(/databases/$(database)/documents/applicants/$(resource.data.applicantId)).data.userId == request.auth.uid)
+      );
+      allow list: if isSignedIn() && (isAdmin() || isExaminer());
+      allow create: if isSignedIn() && (isAdmin() || (isExaminer() && request.resource.data.examinerId == request.auth.uid));
+      allow update: if isSignedIn() && (isAdmin() || (isExaminer() && resource.data.examinerId == request.auth.uid));
+      allow delete: if isAdmin();
+    }
+
+    // Admission Decisions (Final Panitia decree)
+    match /admissionDecisions/{decisionId} {
+      allow get: if isSignedIn() && (
+        isAdmin() ||
+        isExaminer() ||
+        (exists(/databases/$(database)/documents/applicants/$(resource.data.applicantId)) &&
+         get(/databases/$(database)/documents/applicants/$(resource.data.applicantId)).data.userId == request.auth.uid)
+      );
+      allow list: if isSignedIn() && (isAdmin() || isExaminer());
+      allow write: if isAdmin();
+    }
+
+    // System Configuration (Grading policy, weights, passing grades)
+    match /systemConfig/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Decision Audit Logs (Track changes to candidate admission decisions)
+    match /decisionAuditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Announcement Configuration (Publication controls & public letters)
+    match /announcementConfig/{configId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

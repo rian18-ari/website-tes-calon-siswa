@@ -1,0 +1,6 @@
+{
+  "name": "PPDB Pondok Pesantren Al Ikhlas",
+  "description": "Sistem Seleksi dan Penilaian Calon Santri Baru Pondok Pesantren Al Ikhlas",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

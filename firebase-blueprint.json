@@ -1,0 +1,270 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with assigned PPDB role",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "displayName": { "type": "string", "description": "Full name of the user" },
+        "role": { "type": "string", "enum": ["admin", "examiner", "applicant"], "description": "User access role" },
+        "photoURL": { "type": "string", "description": "Avatar photo URL" },
+        "phoneNumber": { "type": "string", "description": "Contact phone number" },
+        "createdAt": { "type": "string", "description": "Timestamp of creation" },
+        "updatedAt": { "type": "string", "description": "Timestamp of last update" }
+      },
+      "required": ["uid", "email", "displayName", "role"]
+    },
+    "Applicant": {
+      "title": "Applicant",
+      "description": "Prospective student (Calon Santri) PPDB profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Applicant document ID" },
+        "userId": { "type": "string", "description": "Associated user auth UID" },
+        "registrationNumber": { "type": "string", "description": "Unique registration number e.g. PPDB-2026-001" },
+        "fullName": { "type": "string", "description": "Full name of candidate" },
+        "nisn": { "type": "string", "description": "National Student Identification Number" },
+        "gender": { "type": "string", "enum": ["L", "P"], "description": "Gender: L (Laki-laki) or P (Perempuan)" },
+        "birthPlace": { "type": "string", "description": "Place of birth" },
+        "birthDate": { "type": "string", "description": "Date of birth YYYY-MM-DD" },
+        "previousSchool": { "type": "string", "description": "Origin school name" },
+        "parentName": { "type": "string", "description": "Father or Guardian name" },
+        "parentPhone": { "type": "string", "description": "Parent WhatsApp / phone number" },
+        "address": { "type": "string", "description": "Full residential address" },
+        "wave": { "type": "string", "description": "Registration wave e.g. Gelombang 1" },
+        "program": { "type": "string", "description": "Chosen study program e.g. Tahfidz Reguler, Madrasah Tsanawiyah" },
+        "status": { "type": "string", "enum": ["registered", "verified", "testing", "tested", "announced"], "description": "Admission status" },
+        "createdAt": { "type": "string", "description": "Timestamp of creation" },
+        "updatedAt": { "type": "string", "description": "Timestamp of last update" }
+      },
+      "required": ["userId", "registrationNumber", "fullName", "gender", "status"]
+    },
+    "TestCategory": {
+      "title": "TestCategory",
+      "description": "Category of entrance examinations e.g. Tahfidz, Bahasa Arab, Pengetahuan Agama & Akademik, Wawancara",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Category ID" },
+        "code": { "type": "string", "description": "Unique code e.g. TAHFIDZ, ARABIC, CBT_AKADEMIK, WAWANCARA" },
+        "name": { "type": "string", "description": "Category display name" },
+        "description": { "type": "string", "description": "Brief description" },
+        "type": { "type": "string", "enum": ["cbt", "examiner", "interview"], "description": "Method of test evaluation" },
+        "passingGrade": { "type": "number", "description": "Minimum passing grade (KKM)" },
+        "weight": { "type": "number", "description": "Score weight percentage in final calculation" },
+        "order": { "type": "number", "description": "Display order" }
+      },
+      "required": ["code", "name", "type", "passingGrade", "weight"]
+    },
+    "QuestionBank": {
+      "title": "QuestionBank",
+      "description": "CBT Exam Question items and answer choices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Question ID" },
+        "categoryId": { "type": "string", "description": "Linked TestCategory ID" },
+        "questionText": { "type": "string", "description": "Question body in Indonesian or Arabic" },
+        "questionType": { "type": "string", "enum": ["multiple_choice", "essay"], "description": "Question format" },
+        "options": { "type": "string", "description": "Options array or JSON string" },
+        "correctOptionIndex": { "type": "number", "description": "Zero-based index of correct option" },
+        "points": { "type": "number", "description": "Points awarded for correct answer" },
+        "isActive": { "type": "boolean", "description": "Whether question is active" }
+      },
+      "required": ["categoryId", "questionText", "questionType", "points"]
+    },
+    "TestSchedule": {
+      "title": "TestSchedule",
+      "description": "Exam schedule sessions for applicants",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Schedule ID" },
+        "title": { "type": "string", "description": "Schedule title e.g. Sesi 1 Tes CBT & Tahfidz" },
+        "categoryId": { "type": "string", "description": "Target category ID or 'all'" },
+        "examDate": { "type": "string", "description": "Date in YYYY-MM-DD" },
+        "startTime": { "type": "string", "description": "Start time e.g. 08:00" },
+        "endTime": { "type": "string", "description": "End time e.g. 10:00" },
+        "room": { "type": "string", "description": "Room or hall name e.g. Lab Komputer 1 / Aula Utama" },
+        "quota": { "type": "number", "description": "Maximum capacity" },
+        "examinerId": { "type": "string", "description": "Assigned examiner user ID if applicable" },
+        "wave": { "type": "string", "description": "PPDB Wave identifier" }
+      },
+      "required": ["title", "examDate", "startTime", "endTime", "room"]
+    },
+    "TestSession": {
+      "title": "TestSession",
+      "description": "Live or completed exam session for an applicant",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Session ID" },
+        "applicantId": { "type": "string", "description": "Applicant document ID" },
+        "scheduleId": { "type": "string", "description": "Linked TestSchedule ID" },
+        "status": { "type": "string", "enum": ["scheduled", "in_progress", "completed", "absent"], "description": "Session state" },
+        "startedAt": { "type": "string", "description": "Session start timestamp" },
+        "finishedAt": { "type": "string", "description": "Session finish timestamp" }
+      },
+      "required": ["applicantId", "scheduleId", "status"]
+    },
+    "TestAnswer": {
+      "title": "TestAnswer",
+      "description": "Candidate answers for CBT exam questions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Answer ID" },
+        "sessionId": { "type": "string", "description": "TestSession ID" },
+        "questionId": { "type": "string", "description": "QuestionBank ID" },
+        "selectedOptionIndex": { "type": "number", "description": "Selected option index" },
+        "scoreAwarded": { "type": "number", "description": "Score given for this answer" },
+        "answeredAt": { "type": "string", "description": "Timestamp when question answered" }
+      },
+      "required": ["sessionId", "questionId"]
+    },
+    "TestResult": {
+      "title": "TestResult",
+      "description": "Aggregated overall test result for candidate",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Result ID" },
+        "applicantId": { "type": "string", "description": "Applicant ID" },
+        "totalScore": { "type": "number", "description": "Weighted total score (0-100)" },
+        "categoryScores": { "type": "string", "description": "Breakdown of scores per category" },
+        "status": { "type": "string", "enum": ["pending", "passed", "failed"], "description": "Result qualification" },
+        "generatedAt": { "type": "string", "description": "Timestamp when result was calculated" }
+      },
+      "required": ["applicantId", "totalScore", "status"]
+    },
+    "ExaminerAssessment": {
+      "title": "ExaminerAssessment",
+      "description": "Direct assessment recorded by examiner for tahfidz, baca al-quran, or interview",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Assessment ID" },
+        "applicantId": { "type": "string", "description": "Applicant ID" },
+        "examinerId": { "type": "string", "description": "UID of the examiner user" },
+        "categoryId": { "type": "string", "description": "Category ID e.g. Tahfidz" },
+        "aspectScores": { "type": "string", "description": "Score object per rubric aspect" },
+        "totalScore": { "type": "number", "description": "Overall rubric score (0-100)" },
+        "notes": { "type": "string", "description": "Examiner evaluation notes / catatan penguji" },
+        "evaluatedAt": { "type": "string", "description": "Timestamp of assessment" }
+      },
+      "required": ["applicantId", "examinerId", "categoryId", "totalScore"]
+    },
+    "AdmissionDecision": {
+      "title": "AdmissionDecision",
+      "description": "Official panitia admission decision for prospective santri",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Decision ID" },
+        "applicantId": { "type": "string", "description": "Applicant ID" },
+        "decision": { "type": "string", "enum": ["accepted", "rejected", "waitlist", "pending"], "description": "Official admission status" },
+        "notes": { "type": "string", "description": "Official announcement note or letter ref" },
+        "decisionDate": { "type": "string", "description": "Date of announcement" },
+        "decidedBy": { "type": "string", "description": "Admin UID who ratified decision" }
+      },
+      "required": ["applicantId", "decision"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "System-wide test parameters and grading policies",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Config document ID" },
+        "totalWeight": { "type": "number", "description": "Aggregate active weight percentage" },
+        "aggregatePassingGrade": { "type": "number", "description": "Global passing threshold" },
+        "shuffleQuestions": { "type": "boolean", "description": "Randomize question order" },
+        "shuffleOptions": { "type": "boolean", "description": "Randomize answer options" },
+        "allowDirectResultView": { "type": "boolean", "description": "Whether students see score immediately" },
+        "scoringPolicy": { "type": "string", "description": "Scoring penalty policy: standard or penalty" },
+        "defaultDurationMinutes": { "type": "number", "description": "Default exam duration in minutes" }
+      },
+      "required": ["totalWeight", "aggregatePassingGrade"]
+    },
+    "DecisionAuditLog": {
+      "title": "DecisionAuditLog",
+      "description": "Audit trail logging changes to admission decisions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Log ID" },
+        "applicantId": { "type": "string", "description": "Target applicant ID" },
+        "applicantName": { "type": "string", "description": "Applicant full name" },
+        "registrationNumber": { "type": "string", "description": "Registration number" },
+        "previousDecision": { "type": "string", "description": "Previous decision status" },
+        "newDecision": { "type": "string", "description": "New ratified decision status" },
+        "changedBy": { "type": "string", "description": "Admin identity or UID" },
+        "reason": { "type": "string", "description": "Audit justification" },
+        "timestamp": { "type": "string", "description": "ISO timestamp" }
+      },
+      "required": ["applicantId", "newDecision", "changedBy", "timestamp"]
+    },
+    "AnnouncementConfig": {
+      "title": "AnnouncementConfig",
+      "description": "Publication controls and policies for PPDB admission results",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Document ID 'current'" },
+        "isPublished": { "type": "boolean", "description": "Whether results are officially published to applicants" },
+        "publishDate": { "type": "string", "description": "Scheduled release date and time" },
+        "showCategoryBreakdown": { "type": "boolean", "description": "Whether applicants see per-category score breakdowns" },
+        "showExaminerNotes": { "type": "boolean", "description": "Whether applicants can see qualitative examiner remarks" },
+        "publicNotice": { "type": "string", "description": "Official announcement message from panitia" },
+        "updatedAt": { "type": "string", "description": "Timestamp of configuration update" },
+        "updatedBy": { "type": "string", "description": "Admin UID who modified config" }
+      },
+      "required": ["isPublished"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account profiles with role definitions"
+    },
+    "/applicants/{applicantId}": {
+      "schema": "Applicant",
+      "description": "Prospective santri PPDB registration records"
+    },
+    "/testCategories/{categoryId}": {
+      "schema": "TestCategory",
+      "description": "Categories and weights of entrance tests"
+    },
+    "/questionBanks/{questionId}": {
+      "schema": "QuestionBank",
+      "description": "Examination question pool"
+    },
+    "/testSchedules/{scheduleId}": {
+      "schema": "TestSchedule",
+      "description": "Exam schedules and venue allocation"
+    },
+    "/testSessions/{sessionId}": {
+      "schema": "TestSession",
+      "description": "Test sessions linked to applicants"
+    },
+    "/testAnswers/{answerId}": {
+      "schema": "TestAnswer",
+      "description": "Individual answers logged for CBT sessions"
+    },
+    "/testResults/{resultId}": {
+      "schema": "TestResult",
+      "description": "Overall calculated scores and grades"
+    },
+    "/examinerAssessments/{assessmentId}": {
+      "schema": "ExaminerAssessment",
+      "description": "Oral exam, Tahfidz, and interview grading by ustadz/examiner"
+    },
+    "/admissionDecisions/{decisionId}": {
+      "schema": "AdmissionDecision",
+      "description": "Final admissions committee decree for santri intake"
+    },
+    "/systemConfig/{configId}": {
+      "schema": "SystemConfig",
+      "description": "Global PPDB scoring rules and settings"
+    },
+    "/decisionAuditLogs/{logId}": {
+      "schema": "DecisionAuditLog",
+      "description": "Audit trail records for admission decisions"
+    },
+    "/announcementConfig/{configId}": {
+      "schema": "AnnouncementConfig",
+      "description": "Announcement publication controls and public letters"
+    }
+  }
+}
